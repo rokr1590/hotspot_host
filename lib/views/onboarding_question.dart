@@ -4,12 +4,15 @@ import "package:flutter/material.dart";
 import 'package:flutter_sound/flutter_sound.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:hotspot_hosts/utils/widgets/background_widget.dart';
+import 'package:hotspot_hosts/utils/widgets/camera_widget.dart';
 import 'package:hotspot_hosts/utils/widgets/experience_selec_button.dart';
 import 'package:hotspot_hosts/view_models/onboarding_question_vm.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:provider/provider.dart';
+import 'package:video_thumbnail/video_thumbnail.dart';
 
 import '../utils/colors.dart';
+import '../utils/globals.dart';
 import '../utils/widgets/progress_widget.dart';
 
 class OnboardingQuestion extends StatefulWidget {
@@ -29,6 +32,44 @@ class _OnboardingQuestionState extends State<OnboardingQuestion> {
   bool _isAudioRecorded = false;
   bool _isRecording = false;
   bool _isRecorded = false;
+
+  String? _videoPath;
+  String? _thumbnailPath;
+  Duration _videoDuration = Duration.zero;
+
+  Future<void> _navigateToCameraPage() async {
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => CameraPage()),
+    );
+
+    if (result != null) {
+      setState(() {
+        _videoPath = result['path'];
+        _videoDuration = result['duration'];
+
+        // Generate video thumbnail
+        _generateVideoThumbnail(videoPath!);
+      });
+    }
+
+    setState(() {
+      onboardingQuestionViewModel.stopRecording();
+      _generateVideoThumbnail(videoPath!);
+    });
+  }
+
+  Future<void> _generateVideoThumbnail(String videoPath) async {
+    final thumbnail = await VideoThumbnail.thumbnailFile(
+      video: videoPath,
+      imageFormat: ImageFormat.JPEG,
+      maxHeight: 100, // Specify max height for the thumbnail
+      quality: 75,
+    );
+    setState(() {
+      _thumbnailPath = thumbnail;
+    });
+  }
 
   Future initRecorder() async {
     final status = await Permission.microphone.request();
@@ -94,11 +135,11 @@ class _OnboardingQuestionState extends State<OnboardingQuestion> {
         leading: IconButton(
           icon: Icon(Icons.arrow_back_ios, color: Colors.white),
           onPressed: () {
-            //Functionaity yet to be added
+            Navigator.pop(context);
           },
         ),
         title: WaveProgressBar(
-          progress: _progress, // Use animated progress value
+          progress: 1, // Use animated progress value
           waveColor: CustomColor.progressComp,
           backgroundColor: CustomColor.progressBg,
         ),
@@ -296,6 +337,27 @@ class _OnboardingQuestionState extends State<OnboardingQuestion> {
                           : Container();
                     },
                   ),
+                  if (videoPath != null && _thumbnailPath != null)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 8.0),
+                      child: Column(
+                        children: [
+                          Image.file(
+                            File(_thumbnailPath!),
+                            height: 100,
+                            fit: BoxFit.cover,
+                          ),
+                          SizedBox(height: 8),
+                          Text(
+                            "Duration: ${_videoDuration.inSeconds} seconds",
+                            style: GoogleFonts.spaceGrotesk(
+                              color: Colors.white,
+                              fontSize: 16,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                   Padding(
                     padding: EdgeInsets.fromLTRB(20, 5, 20, 16),
                     child: Row(
@@ -343,9 +405,7 @@ class _OnboardingQuestionState extends State<OnboardingQuestion> {
                                     child: IconButton(
                                       icon: const Icon(Icons.videocam_outlined,
                                           color: Colors.white),
-                                      onPressed: () {
-                                        //print("Pressed");
-                                      },
+                                      onPressed: _navigateToCameraPage,
                                     ),
                                   ),
                                 )

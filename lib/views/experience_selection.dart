@@ -26,7 +26,7 @@ class _ExperienceSelectionState extends State<ExperienceSelection> {
   late ExperienceSelectionViewModel experienceSelectionViewModel;
   late Size screenSize;
   final TextEditingController describeController = TextEditingController();
-  double _progress = 50.0;
+  double _progress = 0.0;
 
   final List<double> _tiltAngles = [];
 
@@ -63,7 +63,7 @@ class _ExperienceSelectionState extends State<ExperienceSelection> {
           },
         ),
         title: WaveProgressBar(
-          progress: _progress, // Use animated progress value
+          progress: 0.5, // Use animated progress value
           waveColor: CustomColor.progressComp,
           backgroundColor: CustomColor.progressBg,
         ),
